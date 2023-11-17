@@ -34,7 +34,6 @@ function OUTILS.GetHighlightedObject(target_highlight_ids, target_object_ids)
     local closestDistance = nil
     local closestHighlightedObject = nil
     local highlightedObject = nil
-
     for _, hlobject in pairs(hlobjects) do
         if OUTILS.IsInArray(target_highlight_ids, hlobject.Id) then
             for _, object in pairs(objects) do
@@ -43,7 +42,9 @@ function OUTILS.GetHighlightedObject(target_highlight_ids, target_object_ids)
                     if (closestDistance == nil or distance < closestDistance) and distance < 1 then
                         closestDistance = distance
                         closestHighlightedObject = hlobject.Id
-                        highlightedObject = object.Id
+                        highlightedObject = {
+                            Id = object.Id,
+                            Coords = WPOINT.new(object.Tile_XYZ.x, object.Tile_XYZ.y, object.Tile_XYZ.z) }
                     end
                 end
             end
@@ -66,11 +67,15 @@ function OUTILS.GetClosestObject(target_ids)
             local distance = API.Math_DistanceF(API.PlayerCoordfloat(), object.Tile_XYZ)
             if minDistance == nil or distance < minDistance then
                 minDistance = distance
-                closestObject = object.Id
+                closestObject = {
+                    Id = object.Id,
+                    Coords = WPOINT.new(object.Tile_XYZ.x, object.Tile_XYZ.y, object.Tile_XYZ.z) }
             end
         end
     end
-    return closestObject
+    if (closestObject) then
+        return closestObject
+    end
 end
 
 
