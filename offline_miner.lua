@@ -1,12 +1,13 @@
 local API = require("api")
 local OUTILS = require("offline_utils")
+local OAREAS = require("offline_areas")
 
 
 -------------------------------------------------------------------------------------------------------------------
 local startTime = os.time()
 local startXp = API.GetSkillXP("MINING")
 local numOres, final = 0, 0
-
+local isBanking = true
 
 -- Rounds a number to the nearest integer or to a specified number of decimal places.
 local function round(val, decimal)
@@ -87,7 +88,7 @@ local function setupGUI()
     IG_Back.string_value = ""
 end
 
-function drawGUI()
+local function drawGUI()
     API.DrawSquareFilled(IG_Back)
     API.DrawTextAt(IG)
     API.DrawTextAt(IG2)
@@ -113,17 +114,17 @@ local oreIds = {
     orichalcite = 44822,
     necrite = 44826
 }
-local ore_box = {
-    bronze_box = 44779,
-    iron_box = 44781,
-    steel_box = 44783,
-    mithril_box = 44785,
-    adamant_box = 44787,
-    rune_box = 44789,
-    orikalkum_box = 44791,
-    necronium_box = 44793,
-    bane_box = 44795,
-    elder_rune_box = 44797
+local oreBox = {
+    bronzeBox = 44779,
+    ironBox = 44781,
+    steelBox = 44783,
+    mithrilBox = 44785,
+    adamantBox = 44787,
+    runeBox = 44789,
+    orikalkumBox = 44791,
+    necroniumBox = 44793,
+    baneBox = 44795,
+    elderRuneBox = 44797
 }
 local oreTiles = {
     se_lumbridge_swamp = {
@@ -166,6 +167,8 @@ local oreTiles = {
     }
 }
 
+
+
 local highlightedRockIds = {7164, 7165}
 local selectedOreId = nil
 local selectedOreTiles = {}
@@ -198,7 +201,7 @@ end
 print("Starting offline's miner! :)")
 
 
-function IsInventoryFull()
+local function isInventoryFull()
     if (API.GetLocalPlayerAddress() == 0) then
         API.Write_LoopyLoop(false)
     end
@@ -210,7 +213,69 @@ function IsInventoryFull()
 end
 
 
-function IsPlayerMining()
+local function getAmountInOrebox(itemId)
+    local count
+    if itemId == 436 then       -- Copper ore
+        count = API.VB_FindPSett(8309).state
+    elseif itemId == 438 then   -- Tin ore
+        count = API.VB_FindPSett(8310).state
+    elseif itemId == 440 then   -- Iron ore
+        count = API.VB_FindPSett(8311).state
+    elseif itemId == 442 then   -- Silver ore
+        count = API.VB_FindPSett(8313).state
+    elseif itemId == 444 then   -- Gold ore
+        count = API.VB_FindPSett(8317).state
+    elseif itemId == 447 then   -- Mithril ore
+        count = API.VB_FindPSett(8314).state
+    elseif itemId == 449 then   -- Adamantite ore
+        count = API.VB_FindPSett(8315).state
+    elseif itemId == 451 then   -- Runite ore
+        count = API.VB_FindPSett(8318).state
+    elseif itemId == 453 then   -- Coal
+        count = API.VB_FindPSett(8312).state
+    elseif itemId == 21778 then -- Banite ore
+        count = API.VB_FindPSett(8323).state
+    elseif itemId == 44820 then -- Luminite
+        count = API.VB_FindPSett(8316).state
+    elseif itemId == 44822 then -- Orichalcite ore
+        count = API.VB_FindPSett(8319).state
+    elseif itemId == 44824 then -- Drakolith
+        count = API.VB_FindPSett(8320).state
+    elseif itemId == 44826 then -- Necrite ore
+        count = API.VB_FindPSett(8321).state
+    elseif itemId == 44828 then -- Phasmatite
+        count = API.VB_FindPSett(8322).state
+    elseif itemId == 44830 then -- Light animica
+        count = API.VB_FindPSett(8324).state
+    elseif itemId == 44832 then -- Dark animica
+        count = API.VB_FindPSett(8325).state
+    else
+        return -1
+    end
+    return count >> 0 & 0x3fff
+end
+
+
+local function invOreBoxId()
+    for _, id in pairs(oreBox) do
+        if (API.InvItemFound1(id)) then
+            return id
+        end
+    end
+    return 0
+end
+
+
+local function isOreBoxFilled()
+    if (getAmountInOrebox(selectedOreId) > 0) then
+        return true
+    else
+        return false
+    end
+end
+
+
+local function isPlayerMining()
     if (API.GetLocalPlayerAddress() == 0) then
         API.Write_LoopyLoop(false)
     end
@@ -222,7 +287,7 @@ function IsPlayerMining()
 end
 
 
-function MineOre(closestOreTile)
+local function MineOre(closestOreTile)
     if (API.GetLocalPlayerAddress() == 0) then
         API.Write_LoopyLoop(false)
     end
@@ -232,28 +297,96 @@ end
 local currentItemcount, previousItemCount = API.InvItemcount_1(selectedOreId), API.InvItemcount_1(selectedOreId)
 
 
-function DoGuiThings()
+local function DoGuiThings()
     drawGUI()
     currentItemcount = API.InvItemcount_1(selectedOreId)
     if currentItemcount > previousItemCount then
         numOres = numOres + (currentItemcount - previousItemCount)
     end
-    previousItemCount = currentItemcount  -- Update the previous count
+    --update the previous count
+    previousItemCount = currentItemcount
     printProgressReport()
 end
 
 
+local function BankOre()
 
+    if (API.PInAreaW(OAREAS.areas.mining.mining_guild.GUILD,50)) then
+        --go up ladder
+        API.DoAction_Object2(0x34,0,{ 6226 },50,WPOINT.new(3020,9739,0))
+
+        while(API.PInAreaW(OAREAS.areas.mining.mining_guild.GUILD,50)) do
+            API.RandomSleep2(50, 50, 50)
+        end
+
+        API.RandomSleep2(2300, 2200, 2000)
+    end
+
+    if (API.PInAreaW(OAREAS.areas.mining.mining_guild.BANK,50)) then
+        --open bank interface
+        API.DoAction_Object2(0x5, 80, { 11758 }, 50, WPOINT.new(3013,3354,0))
+        API.RandomSleep(600, 700, 1000)
+
+        while (not API.BankOpen2()) do
+            API.RandomSleep2(50, 50, 50)
+        end
+        API.RandomSleep2(200, 150, 150)
+        --deposit rune ore from inventory
+        API.DoAction_Interface(0xffffffff,selectedOreId,7,517,15,2,6112)
+        API.RandomSleep2(300, 200, 250)
+        if (invOreBoxId() > 0) then
+            --deposit rune ore from ore box
+            API.DoAction_Interface(0xffffffff,invOreBoxId(),8,517,15,0,6112)
+            API.RandomSleep2(200, 100, 250)
+            --deposit stone spirits from ore box
+            API.DoAction_Interface(0xffffffff,invOreBoxId(),9,517,15,0,6112)
+        end
+
+        --go down ladder
+        API.DoAction_Object2(0x35,0,{ 2113 },50,WPOINT.new(3020,3339,0))
+        --wait for player to stop moving
+        while (API.PInAreaW(OAREAS.areas.mining.mining_guild.BANK,50)) do
+            API.RandomSleep(50, 50, 50)
+        end
+
+        API.RandomSleep2(2200, 2500, 2300)
+    end
+
+end
+
+
+local function HandleInventory()
+    if (isBanking) then
+        print("Inventory is full! Banking ore")
+        BankOre()
+    else
+        print("Inventory is full! Dropping inventory")
+        OUTILS.DropInventory()
+    end
+end
 
 
 --pre-main loop check
-if (API.Invfreecount_() < 4) then
+if (API.Invfreecount_() == 0) then
     if (API.GetLocalPlayerAddress() == 0) then
         print("Player not logged in! Ending script")
         API.Write_LoopyLoop(false)
     end
-    print("Inventory has very few free spaces. Dropping inventory")
-    OUTILS.DropInventory()
+    if (getAmountInOrebox(selectedOreId) == 100 or getAmountInOrebox(selectedOreId) == 120 or getAmountInOrebox(selectedOreId) == 140) then
+        HandleInventory()
+    else
+        API.DoAction_Interface(0x24,invOreBoxId(),1,1473,5,0,5392)
+    end
+end
+
+if(API.PInAreaW(OAREAS.areas.mining.mining_guild.BANK,50)) then
+    --go down ladder
+    API.DoAction_Object2(0x35,0,{ 2113 },50,WPOINT.new(3020,3339,0))
+    --wait for player to stop moving
+    while (API.IsPlayerMoving_() or API.PInAreaW(OAREAS.areas.mining.mining_guild.BANK,50)) do
+        API.RandomSleep2(50, 50, 100)
+    end
+    API.RandomSleep2(2000, 2500, 2250)
 end
 
 ---main loop
@@ -266,17 +399,23 @@ do
     OUTILS.IdleCheck()
 
     ---if inventory is full, drop EVERYTHING
-    if (IsInventoryFull()) then
-        print("Inventory full! Dropping inventory")
-        OUTILS.DropInventory()
+    if (isInventoryFull()) then
+        --can assume box is full at 100, 120, or 140
+        if (getAmountInOrebox(selectedOreId) == 100 or getAmountInOrebox(selectedOreId) == 120 or getAmountInOrebox(selectedOreId) == 140) then
+            HandleInventory()
+        else
+            --fill ore box
+            API.DoAction_Interface(0x24,invOreBoxId(),1,1473,5,0,5392)
+            API.RandomSleep2(1300, 1500, 1200)
+        end
     end
 
-    if (not IsPlayerMining() and not IsInventoryFull()) then
+    if (not isPlayerMining() and not isInventoryFull()) then
         MineOre(tileToMine)
         API.RandomSleep2(3500, 400, 200)
     end
 
-    while (IsPlayerMining() and API.Read_LoopyLoop()) do
+    while (isPlayerMining() and API.Read_LoopyLoop()) do
         print("Player is mining. Monitoring for highlighted rock and stamina")
         repeat
             local highlightedRock = OUTILS.GetHighlightedObject(highlightedRockIds, selectedOreTiles)
@@ -299,7 +438,7 @@ do
                 API.RandomSleep2(800, 200, 200)
             end
 
-        until not IsPlayerMining()
+        until not isPlayerMining()
     end
 end
 

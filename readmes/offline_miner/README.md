@@ -17,12 +17,12 @@ First released and stable script. I do plan on adding many more areas later but 
       
 ### Features
 - [x] Powermining
-- [ ] Banking
+- [X] Banking
   - [ ] SE Lumbridge Swamp
   - [ ] SW Lumbridge Swamp
   - [ ] SE Varrock
   - [ ] SW Varrock
   - [ ] NE Yanille
-  - [ ] Mining Guild
+  - [X] Mining Guild
   - [ ] Uzer Mine
   - [ ] N Fremmenik
